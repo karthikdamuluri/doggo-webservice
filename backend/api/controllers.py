@@ -20,6 +20,7 @@ from django.db import models
 from django.contrib.auth.models import *
 from api.models import *
 
+
 #REST API
 from rest_framework import viewsets, filters, parsers, renderers
 from django.http import Http404
@@ -37,7 +38,9 @@ from rest_framework.authentication import *
 
 from api.pagination import *
 import json, datetime, pytz
-from django.core import serializers
+#from django.core import serializers
+from rest_framework import serializers
+
 import requests
 
 
@@ -202,4 +205,119 @@ class ActivateIFTTT(APIView):
         #log the event in the DB
         newEvent.save()
         print 'New Event Logged'
+        return Response({'success': True}, status=status.HTTP_200_OK)
+
+class DogList(APIView):
+    permission_classes = (AllowAny,)
+    parser_classes = (parsers.JSONParser,parsers.FormParser)
+    renderer_classes = (renderers.JSONRenderer, )
+
+    def get(self, request, format=None):
+        dogs = Dog.objects.all()
+        dog_serializer = DogSerializer(dogs, many=True)
+        return Response(dog_serializer.data)
+
+    def post(self, request, *args, **kwargs):
+        print 'REQUEST DATA'
+        print str(request.data)
+        serializer = DogSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'success': True}, status=status.HTTP_200_OK)
+        return Response({'success':False, 'error':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class DogDetail(APIView):
+    permission_classes = (AllowAny,)
+    parser_classes = (parsers.JSONParser,parsers.FormParser)
+    renderer_classes = (renderers.JSONRenderer, )
+
+    def get_object(self,pk):
+        try:
+            return Dog.objects.get(pk=pk)
+        except Dog.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, format=None):
+        dog = self.get_object(pk)
+        print "dog details"
+        print dog
+
+        dog_serializer = DogSerializer(dog)
+        print dog_serializer.data
+
+        return Response(dog_serializer.data)
+
+    def put(self, request, pk, format=None):
+        dog = self.get_object(pk)
+        #print 'REQUEST DATA'
+        #print str(request.data)
+
+        serializer = DogSerializer(dog, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response({'success':False, 'error':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk, format=None):
+        dog = self.get_object(pk)
+        dog.delete()
+        return Response({'success': True}, status=status.HTTP_200_OK)
+
+
+class BreedList(APIView):
+    permission_classes = (AllowAny,)
+    parser_classes = (parsers.JSONParser,parsers.FormParser)
+    renderer_classes = (renderers.JSONRenderer, )
+
+    def get(self, request, format=None):
+        breeds = Breed.objects.all()
+        breed_serializer = BreedSerializer(breeds, many=True)
+        #json_data = serializers.serialize('json', breeds)
+        #content = {'breeds': json_data}
+        return Response(breed_serializer.data)
+
+    def post(self, request, *args, **kwargs):
+        print 'REQUEST DATA'
+        print str(request.data)
+
+        serializer = BreedSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'success': True}, status=status.HTTP_200_OK)
+        return Response({'success':False, 'error':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+class BreedDetail(APIView):
+    permission_classes = (AllowAny,)
+    parser_classes = (parsers.JSONParser,parsers.FormParser)
+    renderer_classes = (renderers.JSONRenderer, )
+
+    def get_object(self,pk):
+        try:
+            return Breed.objects.get(pk=pk)
+        except Breed.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, format=None):
+        breed = self.get_object(pk)
+        breed_serializer = BreedSerializer(breed)
+        #json_data = serializers.serialize('json', breed)
+        #content = {'breed': json_data}
+        return Response(breed_serializer.data)
+
+    def put(self, request, pk, format=None):
+        breed = self.get_object(pk)
+        print 'REQUEST DATA'
+        print str(request.data)
+
+        serializer = BreedSerializer(breed, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response({'success':False, 'error':serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk, format=None):
+        breed = self.get_object(pk)
+        breed.delete()
         return Response({'success': True}, status=status.HTTP_200_OK)
